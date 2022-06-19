@@ -22,6 +22,7 @@ class LocationPicker extends StatefulWidget {
   LocationPicker(
     this.apiKey, {
     Key key,
+    this.pinWidget,
     this.initialCenter,
     this.initialZoom,
     this.requiredGPS,
@@ -42,6 +43,7 @@ class LocationPicker extends StatefulWidget {
   });
 
   final String apiKey;
+  final Widget pinWidget;
 
   final LatLng initialCenter;
   final double initialZoom;
@@ -406,6 +408,7 @@ class LocationPickerState extends State<LocationPicker> {
           ),
           body: MapPicker(
             widget.apiKey,
+            pinWidget: widget.pinWidget,
             initialCenter: widget.initialCenter,
             initialZoom: widget.initialZoom,
             requiredGPS: widget.requiredGPS,
@@ -444,6 +447,7 @@ class LocationPickerState extends State<LocationPicker> {
 Future<LocationResult> showLocationPicker(
   BuildContext context,
   String apiKey, {
+  Widget pinWidget,
   LatLng initialCenter = const LatLng(45.521563, -122.677433),
   double initialZoom = 16,
   bool requiredGPS = false,
@@ -468,6 +472,7 @@ Future<LocationResult> showLocationPicker(
         // print('[LocationPicker] [countries] ${countries.join(', ')}');
         return LocationPicker(
           apiKey,
+          pinWidget: pinWidget,
           initialCenter: initialCenter,
           initialZoom: initialZoom,
           requiredGPS: requiredGPS,

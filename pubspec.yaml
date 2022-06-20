@@ -1,7 +1,6 @@
 name: j_location_picker
 description: New flutter plugin to pick locations By Just Codes.
 version: 1.2.0
-author: jucodes.com
 homepage: https://github.com/AymanYassinn/j_location_picker.git
 
 environment:

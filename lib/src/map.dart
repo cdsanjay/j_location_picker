@@ -1,16 +1,17 @@
 import 'dart:async';
 import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:geolocator/geolocator.dart';
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:http/http.dart' as http;
 import 'package:j_location_picker/generated/l10n.dart';
 import 'package:j_location_picker/src/providers/location_provider.dart';
 import 'package:j_location_picker/src/utils/loading_builder.dart';
 import 'package:j_location_picker/src/utils/log.dart';
-import 'package:google_maps_flutter/google_maps_flutter.dart';
-import 'package:http/http.dart' as http;
 import 'package:provider/provider.dart';
 
 import 'model/location_result.dart';
@@ -21,6 +22,7 @@ class MapPicker extends StatefulWidget {
     this.apiKey, {
     Key key,
     this.pinWidget,
+    this.fetchAddress,
     this.initialCenter,
     this.initialZoom,
     this.requiredGPS,
@@ -63,6 +65,7 @@ class MapPicker extends StatefulWidget {
   final String language;
 
   final LocationAccuracy desiredAccuracy;
+  final Function fetchAddress;
 
   @override
   MapPickerState createState() => MapPickerState();
@@ -94,8 +97,8 @@ class MapPickerState extends State<MapPicker> {
   Future<void> _initCurrentLocation() async {
     Position currentPosition;
     try {
-      currentPosition =
-          await Geolocator.getCurrentPosition(desiredAccuracy: widget.desiredAccuracy);
+      currentPosition = await Geolocator.getCurrentPosition(
+          desiredAccuracy: widget.desiredAccuracy);
       d("position = $currentPosition");
 
       setState(() => _currentPosition = currentPosition);
@@ -276,14 +279,34 @@ class MapPickerState extends State<MapPicker> {
           'https://maps.googleapis.com/maps/api/geocode/json?latlng=${location?.latitude},${location?.longitude}'
           '&key=${widget.apiKey}&language=${widget.language}';
 
-      final response = jsonDecode((await http.get(Uri.parse(endpoint),
-              headers: await LocationUtils.getAppHeaders()))
-          .body);
+      final List<Future<dynamic>> addressListFuture = <Future<dynamic>>[];
 
-      return {
-        "placeId": response['results'][0]['place_id'],
-        "address": response['results'][0]['formatted_address']
-      };
+      final googlePlacePromise = http.get(Uri.parse(endpoint),
+          headers: await LocationUtils.getAppHeaders());
+      addressListFuture.add(googlePlacePromise);
+      if (widget.fetchAddress != null) {
+        addressListFuture.add(widget.fetchAddress());
+      }
+      final listResult = await Future.wait(addressListFuture);
+      String placeName;
+      if (listResult.length > 1) {
+        final placeResponse = jsonDecode(listResult[1])?.body;
+        if (placeResponse != null && placeResponse['data'] != null)
+          return {
+            'address': placeResponse['data'] ?? placeResponse['data']['name'],
+            "placeId": "1"
+          };
+      }
+      if (placeName == null) {
+        final googlePlaceResponse = jsonDecode((listResult[0]).body);
+        if (googlePlaceResponse != null) {
+          return {
+            "placeId": googlePlaceResponse['results'][0]['place_id'],
+            "address": googlePlaceResponse['results'][0]['formatted_address']
+          };
+        }
+      }
+      return {"placeId": "1", "address": "Somewhere... "};
     } catch (e) {
       print(e);
     }
@@ -297,7 +320,7 @@ class MapPickerState extends State<MapPicker> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-            widget.pinWidget??Icon(Icons.place, size: 56),
+            widget.pinWidget ?? Icon(Icons.place, size: 56),
             Container(
               decoration: ShapeDecoration(
                 shadows: [
@@ -409,7 +432,6 @@ class MapPickerState extends State<MapPicker> {
       },
     );
   }
-
 }
 
 class _MapFabs extends StatelessWidget {

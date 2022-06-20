@@ -22,6 +22,7 @@ class LocationPicker extends StatefulWidget {
   LocationPicker(
     this.apiKey, {
     Key key,
+    this.fetchAddress,
     this.pinWidget,
     this.initialCenter,
     this.initialZoom,
@@ -67,6 +68,7 @@ class LocationPicker extends StatefulWidget {
   final String language;
 
   final LocationAccuracy desiredAccuracy;
+  final Function fetchAddress;
 
   @override
   LocationPickerState createState() => LocationPickerState();
@@ -408,6 +410,7 @@ class LocationPickerState extends State<LocationPicker> {
           ),
           body: MapPicker(
             widget.apiKey,
+            fetchAddress: widget.fetchAddress,
             pinWidget: widget.pinWidget,
             initialCenter: widget.initialCenter,
             initialZoom: widget.initialZoom,
@@ -448,6 +451,7 @@ Future<LocationResult> showLocationPicker(
   BuildContext context,
   String apiKey, {
   Widget pinWidget,
+  Function fetchAddress,
   LatLng initialCenter = const LatLng(45.521563, -122.677433),
   double initialZoom = 16,
   bool requiredGPS = false,
@@ -473,6 +477,7 @@ Future<LocationResult> showLocationPicker(
         return LocationPicker(
           apiKey,
           pinWidget: pinWidget,
+          fetchAddress: fetchAddress,
           initialCenter: initialCenter,
           initialZoom: initialZoom,
           requiredGPS: requiredGPS,
